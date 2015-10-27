@@ -10,6 +10,7 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
+	"golang.org/x/tools/go/ast/astutil"
 	"io/ioutil"
 	"os"
 	"path"
@@ -24,9 +25,10 @@ var DefaultOptions = Options{
 }
 
 // Process creates a specific package from the generic specified in pkg
-func Process(pkg, outdir string, newType string, opts *Options) error {
-	if opts == nil {
-		opts = &DefaultOptions
+func Process(pkg, outdir string, newType string, optset ...func(*Options)) error {
+	opts := DefaultOptions
+	for _, fn := range optset {
+		fn(&opts)
 	}
 
 	p, err := findPackage(pkg)
@@ -42,32 +44,42 @@ func Process(pkg, outdir string, newType string, opts *Options) error {
 		return err
 	}
 
-	files := make([]processedFile, 0)
+	t := parseTargetType(newType)
 
-	for _, f := range p.GoFiles {
-		res, err := processFile(p, f, newType)
-		if err != nil {
-			return err
-		}
-		files = append(files, res)
+	files, err := processFiles(p, p.GoFiles, t)
+	if err != nil {
+		return err
+	}
+
+	if err := write(outdir, files); err != nil {
+		return err
 	}
 
 	if opts.SkipTestFiles {
-		return write(outdir, files)
+		return nil
 	}
 
-	for _, f := range p.TestGoFiles {
-		res, err := processFile(p, f, newType)
-		if err != nil {
-			return err
-		}
-		files = append(files, res)
+	files, err = processFiles(p, p.TestGoFiles, t)
+	if err != nil {
+		return err
 	}
 
 	return write(outdir, files)
 }
 
-func processFile(p Package, filename string, newType string) (processedFile, error) {
+func processFiles(p Package, files []string, t targetType) ([]processedFile, error) {
+	var result []processedFile
+	for _, f := range files {
+		res, err := processFile(p, f, t)
+		if err != nil {
+			return result, err
+		}
+		result = append(result, res)
+	}
+	return result, nil
+}
+
+func processFile(p Package, filename string, t targetType) (processedFile, error) {
 	res := processedFile{filename: filename}
 
 	in, err := os.Open(path.Join(p.Dir, filename))
@@ -85,57 +97,64 @@ func processFile(p Package, filename string, newType string) (processedFile, err
 		return res, FileError{Package: p.Dir, File: filename, Err: err}
 	}
 
-	ast.Walk(visitor{newType: newType}, res.file)
+	if replace(t, res.file) && t.newPkg != "" {
+		astutil.AddImport(res.fset, res.file, t.newPkg)
+	}
 
 	return res, err
 }
 
-type visitor struct {
-	newType string
-}
-
-func (v visitor) Visit(node ast.Node) ast.Visitor {
-	if node == nil {
-		return v
-	}
-	switch n := node.(type) {
-	case *ast.ArrayType:
-		switch t := n.Elt.(type) {
-		case *ast.InterfaceType:
-			if t.Methods.NumFields() == 0 {
-				str := ast.NewIdent(v.newType)
+func replace(t targetType, n ast.Node) (replaced bool) {
+	newType := t.newType
+	ast.Walk(visitFn(func(node ast.Node) {
+		if node == nil {
+			return
+		}
+		switch n := node.(type) {
+		case *ast.ArrayType:
+			if t, ok := n.Elt.(*ast.InterfaceType); ok && t.Methods.NumFields() == 0 {
+				str := ast.NewIdent(newType)
 				str.NamePos = t.Pos()
 				n.Elt = str
+				replaced = true
 			}
-		}
-	case *ast.MapType:
-		switch t := n.Key.(type) {
-		case *ast.InterfaceType:
-			if t.Methods.NumFields() == 0 {
-				str := ast.NewIdent(v.newType)
-				str.NamePos = t.Pos()
-				n.Key = str
-			}
-		}
-		switch t := n.Value.(type) {
-		case *ast.InterfaceType:
-			if t.Methods.NumFields() == 0 {
-				str := ast.NewIdent(v.newType)
+		case *ast.ChanType:
+			if t, ok := n.Value.(*ast.InterfaceType); ok && t.Methods.NumFields() == 0 {
+				str := ast.NewIdent(newType)
 				str.NamePos = t.Pos()
 				n.Value = str
+				replaced = true
 			}
-		}
-	case *ast.Field:
-		switch t := n.Type.(type) {
-		case *ast.InterfaceType:
-			if t.Methods.NumFields() == 0 {
-				str := ast.NewIdent(v.newType)
+		case *ast.MapType:
+			if t, ok := n.Key.(*ast.InterfaceType); ok && t.Methods.NumFields() == 0 {
+				str := ast.NewIdent(newType)
+				str.NamePos = t.Pos()
+				n.Key = str
+				replaced = true
+			}
+			if t, ok := n.Value.(*ast.InterfaceType); ok && t.Methods.NumFields() == 0 {
+				str := ast.NewIdent(newType)
+				str.NamePos = t.Pos()
+				n.Value = str
+				replaced = true
+			}
+		case *ast.Field:
+			if t, ok := n.Type.(*ast.InterfaceType); ok && t.Methods.NumFields() == 0 {
+				str := ast.NewIdent(newType)
 				str.NamePos = t.Pos()
 				n.Type = str
+				replaced = true
 			}
 		}
-	}
-	return v
+	}), n)
+	return replaced
+}
+
+type visitFn func(node ast.Node)
+
+func (fn visitFn) Visit(node ast.Node) ast.Visitor {
+	fn(node)
+	return fn
 }
 
 func write(outdir string, files []processedFile) error {

@@ -27,11 +27,9 @@ func main() {
 		log.Fatal("missing specific type")
 	}
 
-	opts := specific.Options{
-		SkipTestFiles: *skipTests,
-	}
-
-	if err := specific.Process(*pkg, *out, *specificType, &opts); err != nil {
+	if err := specific.Process(*pkg, *out, *specificType, func(opts *specific.Options) {
+		opts.SkipTestFiles = *skipTests
+	}); err != nil {
 		log.Fatal(err)
 	}
 }
