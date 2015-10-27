@@ -25,3 +25,15 @@ go generate
 
 Now you will have your own `list` package to store strings rather than
 `interface{}`
+
+```sh
+% godoc github.com/ernesto-jimenez/gogen/list | egrep 'func.+string'
+```
+
+```go
+func (l *List) InsertAfter(v string, mark *Element) *Element
+func (l *List) InsertBefore(v string, mark *Element) *Element
+func (l *List) PushBack(v string) *Element
+func (l *List) PushFront(v string) *Element
+func (l *List) Remove(e *Element) string
+```
