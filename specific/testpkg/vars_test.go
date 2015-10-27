@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-//go:generate gospecific -specific-type=string -pkg=github.com/ernesto-jimenez/gogen/specific/_testpkg -out-dir=./
+//go:generate go run ../../cmd/gospecific/main.go -specific-type=string -pkg=github.com/ernesto-jimenez/gogen/specific/_testpkg -out-dir=./
 
 func TestProperTypes(t *testing.T) {
 	var (
