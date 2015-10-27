@@ -134,7 +134,12 @@ func (g generator) Write(wr io.Writer) error {
 }
 
 var (
-	mockTmpl = template.Must(template.New("mock").Parse(`package {{.Package}}
+	mockTmpl = template.Must(template.New("mock").Parse(`/*
+* CODE GENERATED AUTOMATICALLY WITH github.com/ernesto-jimenez/gogen/automock
+* THIS FILE SHOULD NOT BE EDITED BY HAND
+*/
+
+package {{.Package}}
 
 import (
 	"fmt"

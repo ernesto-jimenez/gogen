@@ -164,6 +164,10 @@ func write(outdir string, files []processedFile) error {
 			return FileError{Package: outdir, File: f.filename, Err: err}
 		}
 
+		fmt.Fprintf(out, "/*\n"+
+			"* CODE GENERATED AUTOMATICALLY WITH github.com/ernesto-jimenez/gogen/specific\n"+
+			"* THIS FILE SHOULD NOT BE EDITED BY HAND\n"+
+			"*/\n\n")
 		printer.Fprint(out, f.fset, f.file)
 	}
 	return nil

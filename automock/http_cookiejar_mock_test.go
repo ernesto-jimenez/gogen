@@ -1,3 +1,8 @@
+/*
+* CODE GENERATED AUTOMATICALLY WITH github.com/ernesto-jimenez/gogen/automock
+* THIS FILE SHOULD NOT BE EDITED BY HAND
+ */
+
 package automock
 
 import (
