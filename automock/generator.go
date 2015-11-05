@@ -8,6 +8,8 @@ import (
 	"io"
 	"path/filepath"
 	"text/template"
+
+	"github.com/ernesto-jimenez/gogen/imports"
 )
 
 // Generator interface
@@ -109,14 +111,13 @@ func (g *generator) SetInternal(inPkg bool) {
 }
 
 func (g generator) Imports() map[string]string {
-	var imports Imports
-	imports.init(&g)
+	imports := imports.New(g.namePkg)
 	for _, m := range g.Methods() {
 		s := m.signature()
-		imports.importsFromParams(s.Params())
-		imports.importsFromParams(s.Results())
+		imports.AddImportsFrom(s.Params())
+		imports.AddImportsFrom(s.Results())
 	}
-	return imports.imp
+	return imports.Imports()
 }
 
 func (g generator) Write(wr io.Writer) error {
