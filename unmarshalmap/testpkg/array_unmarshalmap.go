@@ -24,6 +24,7 @@ func (s *Array) UnmarshalMap(m map[string]interface{}) error {
 		for i, el := range v {
 			if v, ok := el.(string); ok {
 				s.List[i] = v
+
 			} else {
 				return fmt.Errorf("expected field List[%d] to be string but got %T", i, el)
 			}

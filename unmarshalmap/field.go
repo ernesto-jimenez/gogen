@@ -69,6 +69,9 @@ func (f Field) UnderlyingTarget() fieldser {
 	case *types.Named:
 		t = v
 	}
+	if _, ok := t.(underlyinger); !ok {
+		return nil
+	}
 	u := t.(underlyinger).Underlying()
 	switch t := u.(type) {
 	case *types.Struct:
@@ -100,6 +103,25 @@ func (f fields) Fields() []Field {
 		}
 	}
 	return fields
+}
+
+var fl *types.Basic
+
+func init() {
+	for _, t := range types.Typ {
+		if t.Kind() == types.Float64 {
+			fl = t
+			break
+		}
+	}
+}
+
+func (f Field) ConvertibleFromFloat64() bool {
+	return types.ConvertibleTo(fl, f.v.Type())
+}
+
+func (f Field) UnderlyingConvertibleFromFloat64() bool {
+	return types.ConvertibleTo(fl, f.UnderlyingType())
 }
 
 type fieldser interface {

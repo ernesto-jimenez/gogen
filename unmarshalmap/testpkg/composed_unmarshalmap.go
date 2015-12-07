@@ -14,11 +14,12 @@ func (s *Composed) UnmarshalMap(m map[string]interface{}) error {
 
 	// Struct Embedded
 	if m, ok := m["Embedded"].(map[string]interface{}); ok {
-		s := &s.Embedded
+		var s *Embedded = &s.Embedded
 		// Fill object
 
 		if v, ok := m["Field"].(string); ok {
 			s.Field = v
+
 		} else if v, exists := m["Field"]; exists && v != nil {
 			return fmt.Errorf("expected field Field to be string but got %T", m["Field"])
 		}
@@ -29,6 +30,7 @@ func (s *Composed) UnmarshalMap(m map[string]interface{}) error {
 
 	if v, ok := m["Base"].(string); ok {
 		s.Base = v
+
 	} else if v, exists := m["Base"]; exists && v != nil {
 		return fmt.Errorf("expected field Base to be string but got %T", m["Base"])
 	}

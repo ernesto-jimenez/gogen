@@ -8,6 +8,8 @@ type SimpleStruct struct {
 	SimpleJSONTaggedOmitted string  `json:"field3,omitempty"`
 	SimpleSkipped           string  `json:",omitempty"`
 	SimplePointer           *string `json:"pointer"`
+	SimpleInteger           int     `json:"integer"`
+	SimpleIntegerPtr        *int    `json:"integer_ptr"`
 }
 
 //go:generate go run ../../cmd/gounmarshalmap/main.go -o array_unmarshalmap.go Array

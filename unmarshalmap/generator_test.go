@@ -28,7 +28,7 @@ func TestNewGeneratorErrors(t *testing.T) {
 func TestFields(t *testing.T) {
 	g, err := NewGenerator("./testpkg", "SimpleStruct")
 	assert.NoError(t, err)
-	assert.Len(t, g.Fields(), 4)
+	assert.Len(t, g.Fields(), 6)
 }
 
 func TestImports(t *testing.T) {

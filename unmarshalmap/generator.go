@@ -96,8 +96,14 @@ func (g *generator) SetPackage(name string) {
 
 func (g generator) Imports() map[string]string {
 	imports := imports.New(g.Package())
-	for _, m := range g.Fields() {
+	fields := g.Fields()
+	for i := 0; i < len(fields); i++ {
+		m := fields[i]
 		imports.AddImportsFrom(m.v.Type())
+		imports.AddImportsFrom(m.UnderlyingType())
+		if sub := m.UnderlyingTarget(); sub != nil {
+			fields = append(fields, sub.Fields()...)
+		}
 	}
 	return imports.Imports()
 }
@@ -145,6 +151,11 @@ import (
 		for i, el := range v {
 			if v, ok := el.({{.UnderlyingType}}); ok {
 				s.{{.Name}}[i] = v
+			{{if .UnderlyingConvertibleFromFloat64}}
+			} else if m, ok := el.(float64); ok {
+				v := {{.UnderlyingType}}(m)
+				s.{{.Name}} = v
+			{{end}}
 			} else {
 				return fmt.Errorf("expected field {{.Field}}[%d] to be {{.UnderlyingType}} but got %T", i, el)
 			}
@@ -157,11 +168,12 @@ import (
 		s.{{.Name}} = make({{.Type}}, len(v))
 		prev := s
 		for i, el := range v {
+			var s *{{.UnderlyingTypeName}}
 			{{if .UnderlyingIsPointer}}
 			prev.{{.Name}}[i] = &{{.UnderlyingTypeName}}{}
-			s := prev.{{.Name}}[i]
+			s = prev.{{.Name}}[i]
 			{{else}}
-			s := &prev.{{.Name}}[i]
+			s = &prev.{{.Name}}[i]
 			{{end}}
 			if m, ok := el.(map[string]interface{}); ok {
 				// Fill object
@@ -178,19 +190,32 @@ import (
 		{{if .UnderlyingIsBasic}}
 		if m, ok := p.({{.UnderlyingType}}); ok {
 			s.{{.Name}} = &m
+		{{if .UnderlyingConvertibleFromFloat64}}
+		} else if m, ok := p.(float64); ok {
+			v := {{.UnderlyingType}}(m)
+			s.{{.Name}} = &v
+		{{end}}
+		} else if p == nil {
+			s.{{.Name}} = nil
 		}
 		{{else}}
 		if m, ok := p.(map[string]interface{}); ok {
-			s.{{.Name}} = &{{.UnderlyingTypeName}}{}
+			if s.{{.Name}} == nil {
+				s.{{.Name}} = &{{.UnderlyingTypeName}}{}
+			}
 			s := s.{{.Name}}
 			{{template "UNMARSHALFIELDS" .UnderlyingTarget}}
+		} else if p == nil {
+			s.{{.Name}} = nil
+		} else {
+			return fmt.Errorf("expected field {{.Field}} to be map[string]interface{} but got %T", p)
 		}
 		{{end}}
 	}
 {{else if .IsStruct}}
 	// Struct {{.Name}}
 	if m, ok := m["{{.Field}}"].(map[string]interface{}); ok {
-		s := &s.{{.Name}}
+		var s *{{.Type}} = &s.{{.Name}}
 		// Fill object
 		{{template "UNMARSHALFIELDS" .UnderlyingTarget}}
 	} else if v, exists := m["{{.Field}}"]; exists && v != nil {
@@ -199,6 +224,11 @@ import (
 {{else}}
 	if v, ok := m["{{.Field}}"].({{.Type}}); ok {
 		s.{{.Name}} = v
+	{{if .ConvertibleFromFloat64}}
+	} else if p, ok := m["{{.Field}}"].(float64); ok {
+		v := {{.Type}}(p)
+		s.{{.Name}} = v
+	{{end}}
 	} else if v, exists := m["{{.Field}}"]; exists && v != nil {
 		return fmt.Errorf("expected field {{.Field}} to be {{.Type}} but got %T", m["{{.Field}}"])
 	}

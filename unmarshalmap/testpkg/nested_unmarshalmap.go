@@ -14,11 +14,12 @@ func (s *Nested) UnmarshalMap(m map[string]interface{}) error {
 
 	// Struct First
 	if m, ok := m["First"].(map[string]interface{}); ok {
-		s := &s.First
+		var s *Embedded = &s.First
 		// Fill object
 
 		if v, ok := m["Field"].(string); ok {
 			s.Field = v
+
 		} else if v, exists := m["Field"]; exists && v != nil {
 			return fmt.Errorf("expected field Field to be string but got %T", m["Field"])
 		}
@@ -31,15 +32,22 @@ func (s *Nested) UnmarshalMap(m map[string]interface{}) error {
 	if p, ok := m["Second"]; ok {
 
 		if m, ok := p.(map[string]interface{}); ok {
-			s.Second = &Embedded{}
+			if s.Second == nil {
+				s.Second = &Embedded{}
+			}
 			s := s.Second
 
 			if v, ok := m["Field"].(string); ok {
 				s.Field = v
+
 			} else if v, exists := m["Field"]; exists && v != nil {
 				return fmt.Errorf("expected field Field to be string but got %T", m["Field"])
 			}
 
+		} else if p == nil {
+			s.Second = nil
+		} else {
+			return fmt.Errorf("expected field Second to be map[string]interface{} but got %T", p)
 		}
 
 	}
@@ -50,14 +58,16 @@ func (s *Nested) UnmarshalMap(m map[string]interface{}) error {
 		s.Third = make([]Embedded, len(v))
 		prev := s
 		for i, el := range v {
+			var s *Embedded
 
-			s := &prev.Third[i]
+			s = &prev.Third[i]
 
 			if m, ok := el.(map[string]interface{}); ok {
 				// Fill object
 
 				if v, ok := m["Field"].(string); ok {
 					s.Field = v
+
 				} else if v, exists := m["Field"]; exists && v != nil {
 					return fmt.Errorf("expected field Field to be string but got %T", m["Field"])
 				}
@@ -74,15 +84,17 @@ func (s *Nested) UnmarshalMap(m map[string]interface{}) error {
 		s.Fourth = make([]*Embedded, len(v))
 		prev := s
 		for i, el := range v {
+			var s *Embedded
 
 			prev.Fourth[i] = &Embedded{}
-			s := prev.Fourth[i]
+			s = prev.Fourth[i]
 
 			if m, ok := el.(map[string]interface{}); ok {
 				// Fill object
 
 				if v, ok := m["Field"].(string); ok {
 					s.Field = v
+
 				} else if v, exists := m["Field"]; exists && v != nil {
 					return fmt.Errorf("expected field Field to be string but got %T", m["Field"])
 				}
