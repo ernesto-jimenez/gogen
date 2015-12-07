@@ -140,6 +140,15 @@ import (
 		for i, el := range v {
 			s.{{.Name}}[i] = el
 		}
+	} else if v, ok := m["{{.Field}}"].([]interface{}); ok {
+		s.{{.Name}} = make({{.Type}}, len(v))
+		for i, el := range v {
+			if v, ok := el.({{.UnderlyingType}}); ok {
+				s.{{.Name}}[i] = v
+			} else {
+				return fmt.Errorf("expected field {{.Field}}[%d] to be {{.UnderlyingType}} but got %T", i, el)
+			}
+		}
 	} else if v, exists := m["{{.Field}}"]; exists && v != nil {
 		return fmt.Errorf("expected field {{.Field}} to be []{{.UnderlyingType}} but got %T", m["{{.Field}}"])
 	}

@@ -121,7 +121,29 @@ func TestArrayStruct(t *testing.T) {
 	err := s.UnmarshalMap(m)
 	assert.NoError(t, err)
 	assert.Equal(t, expected, s)
+	equalJSONs(t, expected, m)
 
+	s = testpkg.Array{}
+	m = map[string]interface{}{}
+	data, err := json.Marshal(expected)
+	assert.NoError(t, err)
+	json.Unmarshal(data, &m)
+
+	err = s.UnmarshalMap(m)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, s)
+	equalJSONs(t, expected, m)
+
+	s = testpkg.Array{}
+	expected = testpkg.Array{}
+	m = map[string]interface{}{}
+	data, err = json.Marshal(expected)
+	assert.NoError(t, err)
+	json.Unmarshal(data, &m)
+
+	err = s.UnmarshalMap(m)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, s)
 	equalJSONs(t, expected, m)
 }
 
