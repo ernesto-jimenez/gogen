@@ -124,6 +124,10 @@ func (f Field) UnderlyingConvertibleFromFloat64() bool {
 	return types.ConvertibleTo(fl, f.UnderlyingType())
 }
 
+func (f Field) IsAnonymous() bool {
+	return f.v.Anonymous()
+}
+
 type fieldser interface {
 	Fields() []Field
 }

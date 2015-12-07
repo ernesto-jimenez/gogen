@@ -138,8 +138,15 @@ import (
 
 {{define "UNMARSHALFIELDS"}}
 {{range .Fields}}
-{{if .IsArray}}
-  // Array {{.Name}}
+{{if .IsAnonymous}}
+	// Anonymous {{.Name}}
+	if scoped := true; scoped {
+		var s *{{.Type}} = &s.{{.Name}}
+		// Fill object
+		{{template "UNMARSHALFIELDS" .UnderlyingTarget}}
+	}
+{{else if .IsArray}}
+	// Array {{.Name}}
 	{{if .UnderlyingIsBasic}}
 	if v, ok := m["{{.Field}}"].([]{{.UnderlyingType}}); ok {
 		s.{{.Name}} = make({{.Type}}, len(v))

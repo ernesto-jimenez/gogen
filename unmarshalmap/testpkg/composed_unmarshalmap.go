@@ -12,8 +12,8 @@ import (
 // UnmarshalMap takes a map and unmarshals the fieds into the struct
 func (s *Composed) UnmarshalMap(m map[string]interface{}) error {
 
-	// Struct Embedded
-	if m, ok := m["Embedded"].(map[string]interface{}); ok {
+	// Anonymous Embedded
+	if scoped := true; scoped {
 		var s *Embedded = &s.Embedded
 		// Fill object
 
@@ -24,8 +24,6 @@ func (s *Composed) UnmarshalMap(m map[string]interface{}) error {
 			return fmt.Errorf("expected field Field to be string but got %T", m["Field"])
 		}
 
-	} else if v, exists := m["Embedded"]; exists && v != nil {
-		return fmt.Errorf("expected field Embedded to be map[string]interface{} but got %T", m["Embedded"])
 	}
 
 	if v, ok := m["Base"].(string); ok {

@@ -228,3 +228,52 @@ func TestNestedStruct(t *testing.T) {
 	assert.Equal(t, expected, s)
 	equalJSONs(t, expected, m)
 }
+
+func TestEmbeddedStruct(t *testing.T) {
+	var s testpkg.Composed
+	expected := testpkg.Composed{
+		Embedded: testpkg.Embedded{"first embedded"},
+		Base:     "hello",
+	}
+	m := map[string]interface{}{
+		"Field": "first embedded",
+		"Base":  "hello",
+	}
+
+	err := s.UnmarshalMap(m)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, s)
+	equalJSONs(t, expected, m)
+
+	s = testpkg.Composed{}
+	m = map[string]interface{}{}
+	data, err := json.Marshal(expected)
+	assert.NoError(t, err)
+	json.Unmarshal(data, &m)
+
+	err = s.UnmarshalMap(m)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, s)
+	equalJSONs(t, expected, m)
+
+	s = testpkg.Composed{}
+	expected = testpkg.Composed{}
+	m = map[string]interface{}{}
+	data, err = json.Marshal(expected)
+	assert.NoError(t, err)
+	json.Unmarshal(data, &m)
+
+	err = s.UnmarshalMap(m)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, s)
+	equalJSONs(t, expected, m)
+
+	s = testpkg.Composed{}
+	expected = testpkg.Composed{}
+	m = map[string]interface{}{}
+
+	err = s.UnmarshalMap(m)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, s)
+	equalJSONs(t, expected, m)
+}
