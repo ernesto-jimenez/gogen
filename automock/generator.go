@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"text/template"
 
+	"github.com/ernesto-jimenez/gogen/gogenutil"
+	"github.com/ernesto-jimenez/gogen/importer"
 	"github.com/ernesto-jimenez/gogen/imports"
 )
 
@@ -41,9 +43,9 @@ func NewGenerator(pkg, iface string) (Generator, error) {
 		if err != nil {
 			return nil, err
 		}
-		pkg = removeGopath(pkg)
+		pkg = gogenutil.StripGopath(pkg)
 	}
-	p, err := newImporter().Import(pkg)
+	p, err := importer.Default().Import(pkg)
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +113,7 @@ func (g *generator) SetInternal(inPkg bool) {
 }
 
 func (g generator) Imports() map[string]string {
-	imports := imports.New(g.namePkg)
+	imports := imports.New(g.Package())
 	for _, m := range g.Methods() {
 		s := m.signature()
 		imports.AddImportsFrom(s.Params())

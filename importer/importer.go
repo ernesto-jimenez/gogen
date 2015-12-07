@@ -1,4 +1,4 @@
-package automock
+package importer
 
 import (
 	"fmt"
@@ -92,7 +92,8 @@ func (i *customImporter) fsPkg(pkg string) (*types.Package, error) {
 	return p, nil
 }
 
-func newImporter() types.Importer {
+// Default returns an importer that will try to import code from gopath before using go/importer.Default
+func Default() types.Importer {
 	return &customImporter{
 		make(map[string]*types.Package),
 		importer.Default(),

@@ -1,0 +1,206 @@
+package unmarshalmap
+
+import (
+	"bytes"
+	"fmt"
+	"go/format"
+	"go/types"
+	"io"
+	"path/filepath"
+	"text/template"
+
+	"github.com/ernesto-jimenez/gogen/gogenutil"
+	"github.com/ernesto-jimenez/gogen/importer"
+	"github.com/ernesto-jimenez/gogen/imports"
+)
+
+// Generator interface
+type Generator interface {
+	Name() string
+	Package() string
+	Fields() []Field
+	Imports() map[string]string
+	Write(io.Writer) error
+}
+
+type generator struct {
+	name       string
+	targetName string
+	namePkg    string
+	pkg        *types.Package
+	target     *types.Struct
+}
+
+// NewGenerator initializes a generator
+func NewGenerator(pkg, target string) (Generator, error) {
+	var err error
+	if pkg == "" || pkg[0] == '.' {
+		pkg, err = filepath.Abs(filepath.Clean(pkg))
+		if err != nil {
+			return nil, err
+		}
+		pkg = gogenutil.StripGopath(pkg)
+	}
+	p, err := importer.Default().Import(pkg)
+	if err != nil {
+		return nil, err
+	}
+	obj := p.Scope().Lookup(target)
+	if obj == nil {
+		return nil, fmt.Errorf("struct %s missing", target)
+	}
+	if _, ok := obj.Type().Underlying().(*types.Struct); !ok {
+		return nil, fmt.Errorf("%s should be an struct, was %s", target, obj.Type().Underlying())
+	}
+	return &generator{
+		targetName: target,
+		pkg:        p,
+		target:     obj.Type().Underlying().(*types.Struct),
+	}, nil
+}
+
+func (g generator) Fields() []Field {
+	numFields := g.target.NumFields()
+	fields := make([]Field, 0)
+	for i := 0; i < numFields; i++ {
+		f := Field{&g, g.target.Tag(i), g.target.Field(i)}
+		if f.Field() != "" {
+			fields = append(fields, f)
+		}
+	}
+	return fields
+}
+
+func (g generator) qf(pkg *types.Package) string {
+	if g.pkg == pkg {
+		return ""
+	}
+	return pkg.Name()
+}
+
+func (g generator) Name() string {
+	name := g.targetName
+	return name
+}
+
+func (g generator) Package() string {
+	if g.namePkg != "" {
+		return g.namePkg
+	}
+	return g.pkg.Name()
+}
+
+func (g *generator) SetPackage(name string) {
+	g.namePkg = name
+}
+
+func (g generator) Imports() map[string]string {
+	imports := imports.New(g.Package())
+	for _, m := range g.Fields() {
+		imports.AddImportsFrom(m.v.Type())
+	}
+	return imports.Imports()
+}
+
+func (g generator) Write(wr io.Writer) error {
+	var buf bytes.Buffer
+	if err := fnTmpl.Execute(&buf, g); err != nil {
+		return err
+	}
+	formatted, err := format.Source(buf.Bytes())
+	if err != nil {
+		wr.Write(buf.Bytes())
+		return err
+	}
+	_, err = wr.Write(formatted)
+	return err
+}
+
+var (
+	fnTmpl = template.Must(template.New("func").Parse(`/*
+* CODE GENERATED AUTOMATICALLY WITH github.com/ernesto-jimenez/gogen/unmarshalmap
+* THIS FILE SHOULD NOT BE EDITED BY HAND
+*/
+
+package {{.Package}}
+
+import (
+	"fmt"
+{{range $path, $name := .Imports}}
+	{{$name}} "{{$path}}"{{end}}
+)
+
+{{define "UNMARSHALFIELDS"}}
+{{range .Fields}}
+{{if .IsArray}}
+  // Array {{.Name}}
+	{{if .UnderlyingIsBasic}}
+	if v, ok := m["{{.Field}}"].([]{{.UnderlyingType}}); ok {
+		s.{{.Name}} = make({{.Type}}, len(v))
+		for i, el := range v {
+			s.{{.Name}}[i] = el
+		}
+	} else if v, exists := m["{{.Field}}"]; exists && v != nil {
+		return fmt.Errorf("expected field {{.Field}} to be []{{.UnderlyingType}} but got %T", m["{{.Field}}"])
+	}
+	{{else}}
+	if v, ok := m["{{.Field}}"].([]interface{}); ok {
+		s.{{.Name}} = make({{.Type}}, len(v))
+		prev := s
+		for i, el := range v {
+			{{if .UnderlyingIsPointer}}
+			prev.{{.Name}}[i] = &{{.UnderlyingTypeName}}{}
+			s := prev.{{.Name}}[i]
+			{{else}}
+			s := &prev.{{.Name}}[i]
+			{{end}}
+			if m, ok := el.(map[string]interface{}); ok {
+				// Fill object
+				{{template "UNMARSHALFIELDS" .UnderlyingTarget}}
+			}
+		}
+	} else if v, exists := m["{{.Field}}"]; exists && v != nil {
+		return fmt.Errorf("expected field {{.Field}} to be []interface{} but got %T", m["{{.Field}}"])
+	}
+	{{end}}
+{{else if .IsPointer}}
+	// Pointer {{.Name}}
+	if p, ok := m["{{.Field}}"]; ok {
+		{{if .UnderlyingIsBasic}}
+		if m, ok := p.({{.UnderlyingType}}); ok {
+			s.{{.Name}} = &m
+		}
+		{{else}}
+		if m, ok := p.(map[string]interface{}); ok {
+			s.{{.Name}} = &{{.UnderlyingTypeName}}{}
+			s := s.{{.Name}}
+			{{template "UNMARSHALFIELDS" .UnderlyingTarget}}
+		}
+		{{end}}
+	}
+{{else if .IsStruct}}
+	// Struct {{.Name}}
+	if m, ok := m["{{.Field}}"].(map[string]interface{}); ok {
+		s := &s.{{.Name}}
+		// Fill object
+		{{template "UNMARSHALFIELDS" .UnderlyingTarget}}
+	} else if v, exists := m["{{.Field}}"]; exists && v != nil {
+		return fmt.Errorf("expected field {{.Field}} to be map[string]interface{} but got %T", m["{{.Field}}"])
+	}
+{{else}}
+	if v, ok := m["{{.Field}}"].({{.Type}}); ok {
+		s.{{.Name}} = v
+	} else if v, exists := m["{{.Field}}"]; exists && v != nil {
+		return fmt.Errorf("expected field {{.Field}} to be {{.Type}} but got %T", m["{{.Field}}"])
+	}
+{{end}}
+{{end}}
+{{end}}
+
+// UnmarshalMap takes a map and unmarshals the fieds into the struct
+func (s *{{.Name}}) UnmarshalMap(m map[string]interface{}) error {
+	{{template "UNMARSHALFIELDS" .}}
+	return nil
+}
+`))
+)
