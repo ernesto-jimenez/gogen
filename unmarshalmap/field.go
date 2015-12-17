@@ -32,6 +32,12 @@ func (f Field) Field() string {
 		return f.Name()
 	}
 	name := strings.Split(j, ",")[0]
+	if name == "" {
+		return f.Name()
+	}
+	if name == "-" {
+		name = ""
+	}
 	return name
 }
 

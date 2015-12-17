@@ -33,6 +33,13 @@ func (s *SimpleStruct) UnmarshalMap(m map[string]interface{}) error {
 		return fmt.Errorf("expected field field3 to be string but got %T", m["field3"])
 	}
 
+	if v, ok := m["SimpleOmitEmptyNoName"].(string); ok {
+		s.SimpleOmitEmptyNoName = v
+
+	} else if v, exists := m["SimpleOmitEmptyNoName"]; exists && v != nil {
+		return fmt.Errorf("expected field SimpleOmitEmptyNoName to be string but got %T", m["SimpleOmitEmptyNoName"])
+	}
+
 	// Pointer SimplePointer
 	if p, ok := m["pointer"]; ok {
 

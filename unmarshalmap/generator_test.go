@@ -28,7 +28,7 @@ func TestNewGeneratorErrors(t *testing.T) {
 func TestFields(t *testing.T) {
 	g, err := NewGenerator("./testpkg", "SimpleStruct")
 	assert.NoError(t, err)
-	assert.Len(t, g.Fields(), 6)
+	assert.Len(t, g.Fields(), 7)
 }
 
 func TestImports(t *testing.T) {
@@ -82,12 +82,16 @@ func TestSimpleStruct(t *testing.T) {
 		SimpleField:             "hello",
 		SimpleJSONTagged:        "second field",
 		SimpleJSONTaggedOmitted: "third field",
+		SimpleOmitEmptyNoName:   "noname",
 	}
 	m := map[string]interface{}{
 		"SimpleField":   "hello",
 		"field2":        "second field",
 		"field3":        "third field",
 		"SimpleSkipped": "skipped",
+		"Ignored":       "ignore",
+		"-":             "ignore",
+		"SimpleOmitEmptyNoName": "noname",
 	}
 
 	err := s.UnmarshalMap(m)
