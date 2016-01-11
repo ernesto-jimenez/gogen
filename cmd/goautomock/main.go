@@ -44,6 +44,7 @@ func main() {
 
 	w := os.Stdout
 	if *out != "" {
+		log.Printf("Generating mock for %s in %s", iface, *out)
 		w, err = os.OpenFile(*out, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0666)
 		if err != nil {
 			log.Fatal(err)
