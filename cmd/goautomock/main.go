@@ -4,6 +4,7 @@ import (
 	"flag"
 	"log"
 	"os"
+	"path"
 
 	"github.com/ernesto-jimenez/gogen/automock"
 )
@@ -37,7 +38,7 @@ func main() {
 	if *mockPkg != "" {
 		gen.SetPackage(*mockPkg)
 	}
-	if *pkg == "." {
+	if *pkg == "." && path.Dir(*out) == "." {
 		*inPkg = true
 	}
 	gen.SetInternal(*inPkg)

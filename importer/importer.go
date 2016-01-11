@@ -54,12 +54,12 @@ func removeGopath(p string) string {
 func (i *customImporter) fsPkg(pkg string) (*types.Package, error) {
 	dir, err := gopathDir(pkg)
 	if err != nil {
-		return i.base.Import(pkg)
+		return importOrErr(i.base, pkg, err)
 	}
 
 	dirFiles, err := ioutil.ReadDir(dir)
 	if err != nil {
-		return i.base.Import(pkg)
+		return importOrErr(i.base, pkg, err)
 	}
 
 	fset := token.NewFileSet()
@@ -70,6 +70,9 @@ func (i *customImporter) fsPkg(pkg string) (*types.Package, error) {
 		}
 		n := fileInfo.Name()
 		if path.Ext(fileInfo.Name()) != ".go" {
+			continue
+		}
+		if strings.Contains(fileInfo.Name(), "_test.go") {
 			continue
 		}
 		file := path.Join(dir, n)
@@ -83,11 +86,21 @@ func (i *customImporter) fsPkg(pkg string) (*types.Package, error) {
 		}
 		files = append(files, f)
 	}
-	conf := types.Config{Importer: i}
+	conf := types.Config{
+		Importer: i,
+	}
 	p, err := conf.Check(pkg, fset, files, nil)
 
 	if err != nil {
-		p, err = i.base.Import(pkg)
+		return importOrErr(i.base, pkg, err)
+	}
+	return p, nil
+}
+
+func importOrErr(base types.Importer, pkg string, err error) (*types.Package, error) {
+	p, impErr := base.Import(pkg)
+	if impErr != nil {
+		return nil, err
 	}
 	return p, nil
 }
