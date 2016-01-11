@@ -1,6 +1,7 @@
 package automock
 
 import "go/types"
+import "strings"
 
 // Method contains the details from an interface method
 type Method struct {
@@ -16,7 +17,12 @@ func (m Method) Name() string {
 // ParamTypes returns the list of types for the params
 func (m Method) ParamTypes() []string {
 	sig := m.signature()
-	return m.listTypes(sig.Params())
+	types := m.listTypes(sig.Params())
+	n := len(types)
+	if n > 0 && sig.Variadic() {
+		types[n-1] = strings.Replace(types[n-1], "[]", "...", 1)
+	}
+	return types
 }
 
 // ReturnTypes returns the list of types for the params
