@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/ernesto-jimenez/gogen/unmarshalmap/testpkg"
+	"github.com/mitchellh/mapstructure"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -236,7 +237,7 @@ func TestNestedStruct(t *testing.T) {
 func TestEmbeddedStruct(t *testing.T) {
 	var s testpkg.Composed
 	expected := testpkg.Composed{
-		Embedded: testpkg.Embedded{"first embedded"},
+		Embedded: testpkg.Embedded{Field: "first embedded"},
 		Base:     "hello",
 	}
 	m := map[string]interface{}{
@@ -280,4 +281,36 @@ func TestEmbeddedStruct(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, expected, s)
 	equalJSONs(t, expected, m)
+}
+
+func BenchmarkUnmarshalmap(b *testing.B) {
+	to := testpkg.SimpleStruct{}
+	m := map[string]interface{}{
+		"SimpleField":   "hello",
+		"field2":        "second field",
+		"field3":        "third field",
+		"SimpleSkipped": "skipped",
+		"Ignored":       "ignore",
+		"-":             "ignore",
+		"SimpleOmitEmptyNoName": "noname",
+	}
+	for i := 0; i < b.N; i++ {
+		to.UnmarshalMap(m)
+	}
+}
+
+func BenchmarkMapstructure(b *testing.B) {
+	to := testpkg.SimpleStruct{}
+	m := map[string]interface{}{
+		"SimpleField":   "hello",
+		"field2":        "second field",
+		"field3":        "third field",
+		"SimpleSkipped": "skipped",
+		"Ignored":       "ignore",
+		"-":             "ignore",
+		"SimpleOmitEmptyNoName": "noname",
+	}
+	for i := 0; i < b.N; i++ {
+		mapstructure.Decode(m, &to)
+	}
 }

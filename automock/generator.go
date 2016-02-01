@@ -3,12 +3,12 @@ package automock
 import (
 	"bytes"
 	"fmt"
-	"go/format"
 	"go/types"
 	"io"
 	"path/filepath"
 	"text/template"
 
+	"github.com/ernesto-jimenez/gogen/cleanimports"
 	"github.com/ernesto-jimenez/gogen/gogenutil"
 	"github.com/ernesto-jimenez/gogen/importer"
 	"github.com/ernesto-jimenez/gogen/imports"
@@ -127,13 +127,7 @@ func (g generator) Write(wr io.Writer) error {
 	if err := mockTmpl.Execute(&buf, g); err != nil {
 		return err
 	}
-	formatted, err := format.Source(buf.Bytes())
-	if err != nil {
-		wr.Write(buf.Bytes())
-		return err
-	}
-	_, err = wr.Write(formatted)
-	return err
+	return cleanimports.Clean(buf.Bytes(), wr)
 }
 
 var (
