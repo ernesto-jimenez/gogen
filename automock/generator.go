@@ -127,7 +127,7 @@ func (g generator) Write(wr io.Writer) error {
 	if err := mockTmpl.Execute(&buf, g); err != nil {
 		return err
 	}
-	return cleanimports.Clean(buf.Bytes(), wr)
+	return cleanimports.Clean(wr, buf.Bytes())
 }
 
 var (

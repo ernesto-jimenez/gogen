@@ -15,7 +15,7 @@ import (
 
 // Clean writes the clean source to io.Writer. The source can be a io.Reader,
 // string or []bytes
-func Clean(src interface{}, w io.Writer) error {
+func Clean(w io.Writer, src interface{}) error {
 	fset := token.NewFileSet()
 	file, err := parser.ParseFile(fset, "clean.go", src, parser.ParseComments)
 	if err != nil {
