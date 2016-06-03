@@ -45,7 +45,7 @@ func NewGenerator(pkg, iface string) (Generator, error) {
 		}
 		pkg = gogenutil.StripGopath(pkg)
 	}
-	p, err := importer.Default().Import(pkg)
+	p, err := importer.DefaultWithTestFiles().Import(pkg)
 	if err != nil {
 		return nil, err
 	}

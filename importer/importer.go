@@ -15,8 +15,9 @@ import (
 )
 
 type customImporter struct {
-	imported map[string]*types.Package
-	base     types.Importer
+	imported      map[string]*types.Package
+	base          types.Importer
+	skipTestFiles bool
 }
 
 func (i *customImporter) Import(path string) (*types.Package, error) {
@@ -72,7 +73,7 @@ func (i *customImporter) fsPkg(pkg string) (*types.Package, error) {
 		if path.Ext(fileInfo.Name()) != ".go" {
 			continue
 		}
-		if strings.Contains(fileInfo.Name(), "_test.go") {
+		if i.skipTestFiles && strings.Contains(fileInfo.Name(), "_test.go") {
 			continue
 		}
 		file := path.Join(dir, n)
@@ -105,10 +106,20 @@ func importOrErr(base types.Importer, pkg string, err error) (*types.Package, er
 	return p, nil
 }
 
-// Default returns an importer that will try to import code from gopath before using go/importer.Default
+// Default returns an importer that will try to import code from gopath before using go/importer.Default and skipping test files
 func Default() types.Importer {
 	return &customImporter{
-		make(map[string]*types.Package),
-		importer.Default(),
+		imported:      make(map[string]*types.Package),
+		base:          importer.Default(),
+		skipTestFiles: true,
+	}
+}
+
+// DefaultWithTestFiles same as Default but it parses test files too
+func DefaultWithTestFiles() types.Importer {
+	return &customImporter{
+		imported:      make(map[string]*types.Package),
+		base:          importer.Default(),
+		skipTestFiles: false,
 	}
 }
