@@ -7,6 +7,7 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"strings"
 
 	"github.com/ernesto-jimenez/gogen/automock"
 	"github.com/ernesto-jimenez/gogen/importer"
@@ -29,6 +30,19 @@ func main() {
 
 	if iface == "" {
 		log.Fatal("need to specify an interface name")
+	}
+
+	parts := strings.Split(iface, ".")
+	switch len(parts) {
+	case 1:
+	case 2:
+		if *pkg != "." {
+			log.Fatalf("unexpected -pkg value (%q), package is already defined in the interface name as %s", *pkg, parts[0])
+		}
+		*pkg = parts[0]
+		iface = parts[1]
+	default:
+		log.Fatalf("invalid interface %q", iface)
 	}
 
 	gen, err := automock.NewGenerator(*pkg, iface)

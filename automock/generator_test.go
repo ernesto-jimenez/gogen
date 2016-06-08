@@ -82,9 +82,9 @@ func printWithLines(txt io.Reader) {
 }
 
 //go:generate go run ../cmd/goautomock/main.go Generator
-//go:generate go run ../cmd/goautomock/main.go -pkg=io Writer
+//go:generate go run ../cmd/goautomock/main.go io.Writer
 //go:generate go run ../cmd/goautomock/main.go -pkg=io ByteScanner
-//go:generate go run ../cmd/goautomock/main.go -pkg=net/http CookieJar
+//go:generate go run ../cmd/goautomock/main.go net/http.CookieJar
 
 func TestMockedGenerator(t *testing.T) {
 	m := &GeneratorMock{}
