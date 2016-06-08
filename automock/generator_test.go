@@ -81,10 +81,10 @@ func printWithLines(txt io.Reader) {
 	}
 }
 
-//go:generate go run ../cmd/goautomock/main.go -in-pkg -o=generator_mock_test.go Generator
-//go:generate go run ../cmd/goautomock/main.go -mock-pkg=automock -mock-name=WriterMock -o=io_writer_mock_test.go -pkg=io Writer
-//go:generate go run ../cmd/goautomock/main.go -mock-pkg=automock -mock-name=ByteScannerMock -o=byte_scanner_mock_test.go -pkg=io ByteScanner
-//go:generate go run ../cmd/goautomock/main.go -mock-pkg=automock -mock-name=CookieJarMock -o=http_cookiejar_mock_test.go -pkg=net/http -mock-pkg=automock CookieJar
+//go:generate go run ../cmd/goautomock/main.go Generator
+//go:generate go run ../cmd/goautomock/main.go -pkg=io Writer
+//go:generate go run ../cmd/goautomock/main.go -pkg=io ByteScanner
+//go:generate go run ../cmd/goautomock/main.go -pkg=net/http CookieJar
 
 func TestMockedGenerator(t *testing.T) {
 	m := &GeneratorMock{}
@@ -130,7 +130,7 @@ type unexported interface {
 	io.Reader
 }
 
-//go:generate go run ../cmd/goautomock/main.go -in-pkg -o=unexported_mock_test.go unexported
+//go:generate go run ../cmd/goautomock/main.go unexported
 
 func TestUnexported(t *testing.T) {
 	m := &unexportedMock{}

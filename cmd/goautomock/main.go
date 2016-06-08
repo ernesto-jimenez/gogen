@@ -2,15 +2,19 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 	"path"
+	"regexp"
 
 	"github.com/ernesto-jimenez/gogen/automock"
+	"github.com/ernesto-jimenez/gogen/importer"
+	"github.com/ernesto-jimenez/gogen/strconv"
 )
 
 var (
-	out      = flag.String("o", "", "what file to write")
+	out      = flag.String("o", "", "specify the name of the generated code. Default value is by generated based on the name of the variable, e.g.: DefaultClient -> default_client_funcs.go (use \"-\" to print to stdout)")
 	mockName = flag.String("mock-name", "", "name for the mock")
 	mockPkg  = flag.String("mock-pkg", "", "package name for the mock")
 	pkg      = flag.String("pkg", ".", "what package to get the interface from")
@@ -35,16 +39,30 @@ func main() {
 	if *mockName != "" {
 		gen.SetName(*mockName)
 	}
-	if *mockPkg != "" {
-		gen.SetPackage(*mockPkg)
-	}
 	if *pkg == "." && path.Dir(*out) == "." {
 		*inPkg = true
 	}
 	gen.SetInternal(*inPkg)
+	if *mockPkg == "" && !*inPkg {
+		p, err := importer.Default().Import(".")
+		if err != nil {
+			log.Fatal(err)
+		}
+		*mockPkg = p.Name()
+	}
+	if *mockPkg != "" {
+		gen.SetPackage(*mockPkg)
+	}
 
 	w := os.Stdout
-	if *out != "" {
+	if *out == "" {
+		*out = fmt.Sprintf("%s_test.go", gen.Name())
+		if p := regexp.MustCompile(".*/").ReplaceAllString(*pkg, ""); !*inPkg && p != "" && p != "." {
+			*out = p + "_" + *out
+		}
+	}
+	if *out != "-" {
+		*out = strconv.SnakeCase(*out)
 		log.Printf("Generating mock for %s in %s", iface, *out)
 		w, err = os.OpenFile(*out, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0666)
 		if err != nil {

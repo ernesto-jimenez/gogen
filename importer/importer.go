@@ -12,6 +12,8 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+
+	"github.com/ernesto-jimenez/gogen/gogenutil"
 )
 
 type customImporter struct {
@@ -21,6 +23,14 @@ type customImporter struct {
 }
 
 func (i *customImporter) Import(path string) (*types.Package, error) {
+	var err error
+	if path == "" || path[0] == '.' {
+		path, err = filepath.Abs(filepath.Clean(path))
+		if err != nil {
+			return nil, err
+		}
+		path = gogenutil.StripGopath(path)
+	}
 	if pkg, ok := i.imported[path]; ok {
 		return pkg, nil
 	}

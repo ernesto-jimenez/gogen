@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"go/types"
 	"io"
-	"path/filepath"
 	"text/template"
 
 	"github.com/ernesto-jimenez/gogen/cleanimports"
-	"github.com/ernesto-jimenez/gogen/gogenutil"
 	"github.com/ernesto-jimenez/gogen/importer"
 	"github.com/ernesto-jimenez/gogen/imports"
 )
@@ -37,14 +35,6 @@ type generator struct {
 
 // NewGenerator initializes a generator
 func NewGenerator(pkg, iface string) (Generator, error) {
-	var err error
-	if pkg == "" || pkg[0] == '.' {
-		pkg, err = filepath.Abs(filepath.Clean(pkg))
-		if err != nil {
-			return nil, err
-		}
-		pkg = gogenutil.StripGopath(pkg)
-	}
 	p, err := importer.DefaultWithTestFiles().Import(pkg)
 	if err != nil {
 		return nil, err
@@ -83,11 +73,7 @@ func (g generator) Name() string {
 	if g.name != "" {
 		return g.name
 	}
-	name := g.ifaceName
-	if g.inPkg {
-		return name + "Mock"
-	}
-	return name
+	return g.ifaceName + "Mock"
 }
 
 func (g *generator) SetName(name string) {
