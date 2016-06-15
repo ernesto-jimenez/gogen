@@ -15,11 +15,10 @@ import (
 )
 
 var (
-	out      = flag.String("o", "", "specify the name of the generated code. Default value is by generated based on the name of the variable, e.g.: DefaultClient -> default_client_funcs.go (use \"-\" to print to stdout)")
-	mockName = flag.String("mock-name", "", "name for the mock")
-	mockPkg  = flag.String("mock-pkg", "", "package name for the mock")
-	pkg      = flag.String("pkg", ".", "what package to get the interface from")
-	inPkg    = flag.Bool("in-pkg", false, "whether the mock is internal to the package")
+	out      = flag.String("o", "", "override the name of the generated code. Default value is by generated based on the name of the interface, e.g.: Reader -> reader_mock_test.go (use \"-\" to print to stdout)")
+	mockName = flag.String("mock-name", "", "override the name for the mock struct")
+	mockPkg  = flag.String("mock-pkg", "", "override the package name for the mock")
+	pkg      = flag.String("pkg", ".", "override package to get the interface from. It can be specified in the interface name, e.g.: goautomock io.Reader")
 )
 
 func main() {
@@ -53,11 +52,9 @@ func main() {
 	if *mockName != "" {
 		gen.SetName(*mockName)
 	}
-	if *pkg == "." && path.Dir(*out) == "." {
-		*inPkg = true
-	}
-	gen.SetInternal(*inPkg)
-	if *mockPkg == "" && !*inPkg {
+	inPkg := *pkg == "." && path.Dir(*out) == "."
+	gen.SetInternal(inPkg)
+	if *mockPkg == "" && !inPkg {
 		p, err := importer.Default().Import(".")
 		if err != nil {
 			log.Fatal(err)
@@ -71,7 +68,7 @@ func main() {
 	w := os.Stdout
 	if *out == "" {
 		*out = fmt.Sprintf("%s_test.go", gen.Name())
-		if p := regexp.MustCompile(".*/").ReplaceAllString(*pkg, ""); !*inPkg && p != "" && p != "." {
+		if p := regexp.MustCompile(".*/").ReplaceAllString(*pkg, ""); !inPkg && p != "" && p != "." {
 			*out = p + "_" + *out
 		}
 	}
