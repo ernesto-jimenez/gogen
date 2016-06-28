@@ -10,10 +10,11 @@ import (
 	"go/parser"
 	"go/printer"
 	"go/token"
-	"golang.org/x/tools/go/ast/astutil"
 	"io/ioutil"
 	"os"
 	"path"
+
+	"golang.org/x/tools/go/ast/astutil"
 )
 
 type Options struct {
@@ -112,6 +113,7 @@ func replace(t targetType, n ast.Node) (replaced bool) {
 		}
 		switch n := node.(type) {
 		case *ast.ArrayType:
+			replaced = replaced || processStarExpression(n.Elt, newType)
 			if t, ok := n.Elt.(*ast.InterfaceType); ok && t.Methods.NumFields() == 0 {
 				str := ast.NewIdent(newType)
 				str.NamePos = t.Pos()
@@ -119,6 +121,7 @@ func replace(t targetType, n ast.Node) (replaced bool) {
 				replaced = true
 			}
 		case *ast.ChanType:
+			replaced = replaced || processStarExpression(n.Value, newType)
 			if t, ok := n.Value.(*ast.InterfaceType); ok && t.Methods.NumFields() == 0 {
 				str := ast.NewIdent(newType)
 				str.NamePos = t.Pos()
@@ -132,6 +135,7 @@ func replace(t targetType, n ast.Node) (replaced bool) {
 				n.Key = str
 				replaced = true
 			}
+			replaced = replaced || processStarExpression(n.Value, newType)
 			if t, ok := n.Value.(*ast.InterfaceType); ok && t.Methods.NumFields() == 0 {
 				str := ast.NewIdent(newType)
 				str.NamePos = t.Pos()
@@ -139,6 +143,7 @@ func replace(t targetType, n ast.Node) (replaced bool) {
 				replaced = true
 			}
 		case *ast.Field:
+			replaced = replaced || processStarExpression(n.Type, newType)
 			if t, ok := n.Type.(*ast.InterfaceType); ok && t.Methods.NumFields() == 0 {
 				str := ast.NewIdent(newType)
 				str.NamePos = t.Pos()
@@ -148,6 +153,18 @@ func replace(t targetType, n ast.Node) (replaced bool) {
 		}
 	}), n)
 	return replaced
+}
+
+func processStarExpression(e ast.Expr, newType string) bool {
+	if s, ok := e.(*ast.StarExpr); ok {
+		if t, ok := s.X.(*ast.InterfaceType); ok && t.Methods.NumFields() == 0 {
+			str := ast.NewIdent(newType)
+			str.NamePos = s.Pos()
+			s.X = str
+			return true
+		}
+	}
+	return false
 }
 
 type visitFn func(node ast.Node)
