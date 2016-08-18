@@ -34,6 +34,7 @@ func main() {
 
 	var buf bytes.Buffer
 
+	log.Printf("Generating func (*%s) UnmarshalMap(map[string]interface{}) error", st)
 	err = gen.Write(&buf)
 	if err != nil {
 		log.Fatal(err)
