@@ -5,14 +5,17 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 
 	"github.com/ernesto-jimenez/gogen/exportdefault"
 	"github.com/ernesto-jimenez/gogen/strconv"
 )
 
 var (
-	out  = flag.String("o", "", "specify the name of the generated code. Default value is by generated based on the name of the variable, e.g.: DefaultClient -> default_client_funcs.go (use \"-\" to print to stdout)")
-	pref = flag.String("prefix", "", "prefix for the exported function names")
+	out     = flag.String("o", "", "specify the name of the generated code. Default value is by generated based on the name of the variable, e.g.: DefaultClient -> default_client_funcs.go (use \"-\" to print to stdout)")
+	pref    = flag.String("prefix", "", "prefix for the exported function names")
+	include = flag.String("include", "", "export only those methods that match this regexp")
+	exclude = flag.String("exclude", "", "exclude those methods that match this regexp")
 )
 
 func main() {
@@ -28,6 +31,18 @@ func main() {
 	}
 
 	gen.FuncNamePrefix = *pref
+
+	if expr, err := regexp.Compile(*include); *include != "" && err == nil {
+		gen.Include = expr
+	} else if *include != "" {
+		log.Fatalf("-include contains a invalid regular expression: %s", err.Error())
+	}
+
+	if expr, err := regexp.Compile(*include); *exclude != "" && err == nil {
+		gen.Exclude = expr
+	} else if *exclude != "" {
+		log.Fatalf("-exclude contains a invalid regular expression: %s", err.Error())
+	}
 
 	w := os.Stdout
 	if *out == "" {

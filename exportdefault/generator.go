@@ -42,7 +42,7 @@ type Generator struct {
 	Imports        map[string]string
 	funcs          []fn
 	FuncNamePrefix string
-	Filter         *regexp.Regexp
+	Include        *regexp.Regexp
 	Exclude        *regexp.Regexp
 }
 
@@ -80,7 +80,7 @@ func (g *Generator) Write(w io.Writer) error {
 
 	// Generate funcs
 	for _, fn := range g.funcs {
-		if g.Filter != nil && !g.Filter.MatchString(fn.Name) {
+		if g.Include != nil && !g.Include.MatchString(fn.Name) {
 			continue
 		}
 		if g.Exclude != nil && g.Exclude.MatchString(fn.Name) {

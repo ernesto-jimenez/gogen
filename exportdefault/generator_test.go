@@ -11,15 +11,15 @@ import (
 func TestGenerateCode(t *testing.T) {
 	tests := []struct {
 		name    string
-		filter  *regexp.Regexp
+		include *regexp.Regexp
 		exclude *regexp.Regexp
 	}{
 		{
 			name: "simple_example",
 		},
 		{
-			name:   "filtered",
-			filter: regexp.MustCompile("Wrapped.*"),
+			name:    "filtered",
+			include: regexp.MustCompile("Wrapped.*"),
 		},
 		{
 			name:    "excluded",
@@ -27,7 +27,7 @@ func TestGenerateCode(t *testing.T) {
 		},
 		{
 			name:    "filter_and_exclude",
-			filter:  regexp.MustCompile("Wrapped"),
+			include: regexp.MustCompile("Wrapped"),
 			exclude: regexp.MustCompile("Variadric"),
 		},
 	}
@@ -38,7 +38,7 @@ func TestGenerateCode(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: failed initializing generator %s", test.name, err.Error())
 		}
-		g.Filter = test.filter
+		g.Include = test.include
 		g.Exclude = test.exclude
 		var buf bytes.Buffer
 		g.Write(&buf)
