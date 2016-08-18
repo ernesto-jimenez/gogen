@@ -28,6 +28,7 @@ import (
 	"io"
 	"io/ioutil"
 	"path"
+	"regexp"
 	"text/template"
 
 	"github.com/ernesto-jimenez/gogen/cleanimports"
@@ -41,6 +42,8 @@ type Generator struct {
 	Imports        map[string]string
 	funcs          []fn
 	FuncNamePrefix string
+	Filter         *regexp.Regexp
+	Exclude        *regexp.Regexp
 }
 
 // New initialises a new Generator for the corresponding package's variable
@@ -77,6 +80,12 @@ func (g *Generator) Write(w io.Writer) error {
 
 	// Generate funcs
 	for _, fn := range g.funcs {
+		if g.Filter != nil && !g.Filter.MatchString(fn.Name) {
+			continue
+		}
+		if g.Exclude != nil && g.Exclude.MatchString(fn.Name) {
+			continue
+		}
 		fn.FuncNamePrefix = g.FuncNamePrefix
 		buff.Write([]byte("\n\n"))
 		if err := funcTpl.Execute(buff, &fn); err != nil {
