@@ -108,7 +108,31 @@ func (g Generator) Write(wr io.Writer) error {
 	return cleanimports.Clean(wr, buf.Bytes())
 }
 
+func (g Generator) WriteTest(wr io.Writer) error {
+	var buf bytes.Buffer
+	if err := testTmpl.Execute(&buf, g); err != nil {
+		return err
+	}
+	return cleanimports.Clean(wr, buf.Bytes())
+}
+
 var (
+	testTmpl = template.Must(template.New("test").Parse(`/*
+* CODE GENERATED AUTOMATICALLY WITH github.com/ernesto-jimenez/gogen/unmarshalmap
+* THIS FILE SHOULD NOT BE EDITED BY HAND
+*/
+
+package {{.Package}}
+
+import (
+	"testing"
+	test "github.com/ernesto-jimenez/gogen/unmarshalmap/testunmarshalmap"
+)
+
+func Test{{.Name}}UnmarshalMap(t *testing.T) {
+	test.Run(t, &{{.Name}}{})
+}
+`))
 	fnTmpl = template.Must(template.New("func").Parse(`/*
 * CODE GENERATED AUTOMATICALLY WITH github.com/ernesto-jimenez/gogen/unmarshalmap
 * THIS FILE SHOULD NOT BE EDITED BY HAND

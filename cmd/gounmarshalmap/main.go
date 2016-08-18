@@ -2,15 +2,18 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/ernesto-jimenez/gogen/unmarshalmap"
 )
 
 var (
-	out = flag.String("o", "", "what file to write")
-	pkg = flag.String("pkg", ".", "what package to get the interface from")
+	out  = flag.String("o", "", "what file to write")
+	tOut = flag.String("o-test", "", "what file to write the test to")
+	pkg  = flag.String("pkg", ".", "what package to get the interface from")
 )
 
 func main() {
@@ -34,9 +37,25 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		if *tOut == "" {
+			*tOut = fmt.Sprintf("%s_test.go", strings.TrimRight(*out, ".go"))
+		}
+	}
+
+	test := os.Stdout
+	if *tOut != "" {
+		test, err = os.OpenFile(*tOut, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0666)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	err = gen.Write(w)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = gen.WriteTest(test)
 	if err != nil {
 		log.Fatal(err)
 	}
