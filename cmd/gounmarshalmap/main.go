@@ -1,10 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"log"
-	"os"
 	"strings"
 
 	"github.com/ernesto-jimenez/gogen/unmarshalmap"
@@ -31,32 +32,38 @@ func main() {
 		log.Fatal(err)
 	}
 
-	w := os.Stdout
+	var buf bytes.Buffer
+
+	err = gen.Write(&buf)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	if *out != "" {
-		w, err = os.OpenFile(*out, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0666)
+		err := ioutil.WriteFile(*out, buf.Bytes(), 0666)
 		if err != nil {
 			log.Fatal(err)
 		}
 		if *tOut == "" {
 			*tOut = fmt.Sprintf("%s_test.go", strings.TrimRight(*out, ".go"))
 		}
+	} else {
+		fmt.Println(buf.String())
 	}
 
-	test := os.Stdout
+	buf.Reset()
+
+	err = gen.WriteTest(&buf)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	if *tOut != "" {
-		test, err = os.OpenFile(*tOut, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0666)
+		err := ioutil.WriteFile(*tOut, buf.Bytes(), 0666)
 		if err != nil {
 			log.Fatal(err)
 		}
-	}
-
-	err = gen.Write(w)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = gen.WriteTest(test)
-	if err != nil {
-		log.Fatal(err)
+	} else {
+		fmt.Println(buf.String())
 	}
 }

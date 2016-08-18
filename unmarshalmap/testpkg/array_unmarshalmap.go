@@ -12,15 +12,19 @@ import (
 // UnmarshalMap takes a map and unmarshals the fieds into the struct
 func (s *Array) UnmarshalMap(m map[string]interface{}) error {
 
-	// Array List
+	// ArrayOrSlice List
 
 	if v, ok := m["List"].([]string); ok {
+
 		s.List = make([]string, len(v))
+
 		for i, el := range v {
 			s.List[i] = el
 		}
 	} else if v, ok := m["List"].([]interface{}); ok {
+
 		s.List = make([]string, len(v))
+
 		for i, el := range v {
 			if v, ok := el.(string); ok {
 				s.List[i] = v

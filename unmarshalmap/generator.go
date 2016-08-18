@@ -155,16 +155,28 @@ import (
 		// Fill object
 		{{template "UNMARSHALFIELDS" .UnderlyingTarget}}
 	}
-{{else if .IsArray}}
-	// Array {{.Name}}
+{{else if .IsArrayOrSlice}}
+	// ArrayOrSlice {{.Name}}
 	{{if .UnderlyingIsBasic}}
 	if v, ok := m["{{.Field}}"].([]{{.UnderlyingType}}); ok {
+		{{if .IsSlice}}
 		s.{{.Name}} = make({{.Type}}, len(v))
+		{{else}}
+		if len(s.{{.Name}}) < len(v) {
+			return fmt.Errorf("expected field {{.Field}} to be an array with %d elements, but got an array with %d", len(s.{{.Name}}), len(v))
+		}
+		{{end}}
 		for i, el := range v {
 			s.{{.Name}}[i] = el
 		}
 	} else if v, ok := m["{{.Field}}"].([]interface{}); ok {
+		{{if .IsSlice}}
 		s.{{.Name}} = make({{.Type}}, len(v))
+		{{else}}
+		if len(s.{{.Name}}) < len(v) {
+			return fmt.Errorf("expected field {{.Field}} to be an array with %d elements, but got an array with %d", len(s.{{.Name}}), len(v))
+		}
+		{{end}}
 		for i, el := range v {
 			if v, ok := el.({{.UnderlyingType}}); ok {
 				s.{{.Name}}[i] = v
@@ -182,11 +194,20 @@ import (
 	}
 	{{else}}
 	if v, ok := m["{{.Field}}"].([]interface{}); ok {
+		{{if .IsSlice}}
 		s.{{.Name}} = make({{.Type}}, len(v))
+		{{else}}
+		if len(s.{{.Name}}) < len(v) {
+			return fmt.Errorf("expected field {{.Field}} to be an array with %d elements, but got an array with %d", len(s.{{.Name}}), len(v))
+		}
+		{{end}}
 		prev := s
 		for i, el := range v {
 			var s *{{.UnderlyingTypeName}}
 			{{if .UnderlyingIsPointer}}
+			if el == nil {
+				continue
+			}
 			prev.{{.Name}}[i] = &{{.UnderlyingTypeName}}{}
 			s = prev.{{.Name}}[i]
 			{{else}}

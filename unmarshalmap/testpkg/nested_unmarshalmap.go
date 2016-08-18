@@ -52,10 +52,12 @@ func (s *Nested) UnmarshalMap(m map[string]interface{}) error {
 
 	}
 
-	// Array Third
+	// ArrayOrSlice Third
 
 	if v, ok := m["Third"].([]interface{}); ok {
+
 		s.Third = make([]Embedded, len(v))
+
 		prev := s
 		for i, el := range v {
 			var s *Embedded
@@ -78,14 +80,19 @@ func (s *Nested) UnmarshalMap(m map[string]interface{}) error {
 		return fmt.Errorf("expected field Third to be []interface{} but got %T", m["Third"])
 	}
 
-	// Array Fourth
+	// ArrayOrSlice Fourth
 
 	if v, ok := m["Fourth"].([]interface{}); ok {
+
 		s.Fourth = make([]*Embedded, len(v))
+
 		prev := s
 		for i, el := range v {
 			var s *Embedded
 
+			if el == nil {
+				continue
+			}
 			prev.Fourth[i] = &Embedded{}
 			s = prev.Fourth[i]
 
@@ -103,6 +110,70 @@ func (s *Nested) UnmarshalMap(m map[string]interface{}) error {
 		}
 	} else if v, exists := m["Fourth"]; exists && v != nil {
 		return fmt.Errorf("expected field Fourth to be []interface{} but got %T", m["Fourth"])
+	}
+
+	// ArrayOrSlice Fifth
+
+	if v, ok := m["Fifth"].([]interface{}); ok {
+
+		if len(s.Fifth) < len(v) {
+			return fmt.Errorf("expected field Fifth to be an array with %d elements, but got an array with %d", len(s.Fifth), len(v))
+		}
+
+		prev := s
+		for i, el := range v {
+			var s *Embedded
+
+			s = &prev.Fifth[i]
+
+			if m, ok := el.(map[string]interface{}); ok {
+				// Fill object
+
+				if v, ok := m["Field"].(string); ok {
+					s.Field = v
+
+				} else if v, exists := m["Field"]; exists && v != nil {
+					return fmt.Errorf("expected field Field to be string but got %T", m["Field"])
+				}
+
+			}
+		}
+	} else if v, exists := m["Fifth"]; exists && v != nil {
+		return fmt.Errorf("expected field Fifth to be []interface{} but got %T", m["Fifth"])
+	}
+
+	// ArrayOrSlice Sixth
+
+	if v, ok := m["Sixth"].([]interface{}); ok {
+
+		if len(s.Sixth) < len(v) {
+			return fmt.Errorf("expected field Sixth to be an array with %d elements, but got an array with %d", len(s.Sixth), len(v))
+		}
+
+		prev := s
+		for i, el := range v {
+			var s *Embedded
+
+			if el == nil {
+				continue
+			}
+			prev.Sixth[i] = &Embedded{}
+			s = prev.Sixth[i]
+
+			if m, ok := el.(map[string]interface{}); ok {
+				// Fill object
+
+				if v, ok := m["Field"].(string); ok {
+					s.Field = v
+
+				} else if v, exists := m["Field"]; exists && v != nil {
+					return fmt.Errorf("expected field Field to be string but got %T", m["Field"])
+				}
+
+			}
+		}
+	} else if v, exists := m["Sixth"]; exists && v != nil {
+		return fmt.Errorf("expected field Sixth to be []interface{} but got %T", m["Sixth"])
 	}
 
 	return nil

@@ -40,4 +40,11 @@ type Nested struct {
 	Second *Embedded
 	Third  []Embedded
 	Fourth []*Embedded
+	Fifth  [3]Embedded
+	Sixth  [3]*Embedded
+	// TODO: Implement map support
+	// Seventh map[string]Embedded
+	// Eight   map[string]*Embedded
+	// Nineth  map[int]Embedded
+	// Tenth   map[int]*Embedded
 }

@@ -41,11 +41,16 @@ func (f Field) Field() string {
 	return name
 }
 
-func (f Field) IsArray() bool {
+func (f Field) IsArrayOrSlice() bool {
 	if _, ok := f.v.Type().(*types.Slice); ok {
 		return true
 	}
 	_, ok := f.v.Type().(*types.Array)
+	return ok
+}
+
+func (f Field) IsSlice() bool {
+	_, ok := f.v.Type().(*types.Slice)
 	return ok
 }
 

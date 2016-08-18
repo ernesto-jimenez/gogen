@@ -184,16 +184,20 @@ type unmarshalmapper interface {
 func TestNestedStruct(t *testing.T) {
 	var s testpkg.Nested
 	expected := testpkg.Nested{
-		First:  testpkg.Embedded{"first embedded"},
-		Second: &testpkg.Embedded{"second embedded"},
-		Third:  []testpkg.Embedded{{"third embedded"}},
-		Fourth: []*testpkg.Embedded{&testpkg.Embedded{"fourth embedded"}},
+		First:  testpkg.Embedded{Field: "first embedded"},
+		Second: &testpkg.Embedded{Field: "second embedded"},
+		Third:  []testpkg.Embedded{{Field: "third embedded"}},
+		Fourth: []*testpkg.Embedded{&testpkg.Embedded{Field: "fourth embedded"}},
+		Fifth:  [3]testpkg.Embedded{{Field: "fifth embedded"}},
+		Sixth:  [3]*testpkg.Embedded{{Field: "sixth embedded"}},
 	}
 	m := map[string]interface{}{
 		"First":  map[string]interface{}{"Field": "first embedded"},
 		"Second": map[string]interface{}{"Field": "second embedded"},
 		"Third":  []interface{}{map[string]interface{}{"Field": "third embedded"}},
 		"Fourth": []interface{}{map[string]interface{}{"Field": "fourth embedded"}},
+		"Fifth":  []interface{}{map[string]interface{}{"Field": "fifth embedded"}},
+		"Sixth":  []interface{}{map[string]interface{}{"Field": "sixth embedded"}},
 	}
 
 	err := s.UnmarshalMap(m)
@@ -209,6 +213,8 @@ func TestNestedStruct(t *testing.T) {
 
 	err = s.UnmarshalMap(m)
 	assert.NoError(t, err)
+	t.Logf("map: %#v", m)
+	t.Logf("obj: %#v", s)
 	assert.Equal(t, expected, s)
 	equalJSONs(t, expected, m)
 
@@ -221,6 +227,8 @@ func TestNestedStruct(t *testing.T) {
 
 	err = s.UnmarshalMap(m)
 	assert.NoError(t, err)
+	t.Logf("map: %#v", m)
+	t.Logf("obj: %#v", s)
 	assert.Equal(t, expected, s)
 	equalJSONs(t, expected, m)
 
