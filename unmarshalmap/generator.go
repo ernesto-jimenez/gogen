@@ -14,16 +14,8 @@ import (
 	"github.com/ernesto-jimenez/gogen/imports"
 )
 
-// Generator interface
-type Generator interface {
-	Name() string
-	Package() string
-	Fields() []Field
-	Imports() map[string]string
-	Write(io.Writer) error
-}
-
-type generator struct {
+// Generator will generate the UnmarshalMap function
+type Generator struct {
 	name       string
 	targetName string
 	namePkg    string
@@ -31,8 +23,8 @@ type generator struct {
 	target     *types.Struct
 }
 
-// NewGenerator initializes a generator
-func NewGenerator(pkg, target string) (Generator, error) {
+// NewGenerator initializes a Generator
+func NewGenerator(pkg, target string) (*Generator, error) {
 	var err error
 	if pkg == "" || pkg[0] == '.' {
 		pkg, err = filepath.Abs(filepath.Clean(pkg))
@@ -52,14 +44,14 @@ func NewGenerator(pkg, target string) (Generator, error) {
 	if _, ok := obj.Type().Underlying().(*types.Struct); !ok {
 		return nil, fmt.Errorf("%s should be an struct, was %s", target, obj.Type().Underlying())
 	}
-	return &generator{
+	return &Generator{
 		targetName: target,
 		pkg:        p,
 		target:     obj.Type().Underlying().(*types.Struct),
 	}, nil
 }
 
-func (g generator) Fields() []Field {
+func (g Generator) Fields() []Field {
 	numFields := g.target.NumFields()
 	fields := make([]Field, 0)
 	for i := 0; i < numFields; i++ {
@@ -71,30 +63,30 @@ func (g generator) Fields() []Field {
 	return fields
 }
 
-func (g generator) qf(pkg *types.Package) string {
+func (g Generator) qf(pkg *types.Package) string {
 	if g.pkg == pkg {
 		return ""
 	}
 	return pkg.Name()
 }
 
-func (g generator) Name() string {
+func (g Generator) Name() string {
 	name := g.targetName
 	return name
 }
 
-func (g generator) Package() string {
+func (g Generator) Package() string {
 	if g.namePkg != "" {
 		return g.namePkg
 	}
 	return g.pkg.Name()
 }
 
-func (g *generator) SetPackage(name string) {
+func (g *Generator) SetPackage(name string) {
 	g.namePkg = name
 }
 
-func (g generator) Imports() map[string]string {
+func (g Generator) Imports() map[string]string {
 	imports := imports.New(g.Package())
 	fields := g.Fields()
 	for i := 0; i < len(fields); i++ {
@@ -108,7 +100,7 @@ func (g generator) Imports() map[string]string {
 	return imports.Imports()
 }
 
-func (g generator) Write(wr io.Writer) error {
+func (g Generator) Write(wr io.Writer) error {
 	var buf bytes.Buffer
 	if err := fnTmpl.Execute(&buf, g); err != nil {
 		return err

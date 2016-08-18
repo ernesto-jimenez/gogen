@@ -8,7 +8,7 @@ import (
 
 // Field contains the details from an struct field
 type Field struct {
-	gen *generator
+	gen *Generator
 	tag string
 	v   *types.Var
 }
@@ -95,7 +95,7 @@ func (f Field) UnderlyingTarget() fieldser {
 }
 
 type fields struct {
-	g      *generator
+	g      *Generator
 	target *types.Struct
 }
 
