@@ -82,7 +82,11 @@ func main() {
 	}
 
 	err = gen.Write(w)
-	if err != nil {
+	switch err := err.(type) {
+	case automock.GenerationError:
+		log.Println(err.CodeWithLineNumbers())
+		log.Fatal(err)
+	case error:
 		log.Fatal(err)
 	}
 }
