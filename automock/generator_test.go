@@ -3,7 +3,6 @@ package automock
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -81,20 +80,9 @@ func printWithLines(txt io.Reader) {
 	}
 }
 
-//go:generate go run ../cmd/goautomock/main.go Generator
 //go:generate go run ../cmd/goautomock/main.go io.Writer
 //go:generate go run ../cmd/goautomock/main.go -pkg=io ByteScanner
 //go:generate go run ../cmd/goautomock/main.go net/http.CookieJar
-
-func TestMockedGenerator(t *testing.T) {
-	m := &GeneratorMock{}
-	m.On("Write", mock.Anything).Return(nil).Once()
-	assert.NoError(t, m.Write(&bytes.Buffer{}))
-
-	err := errors.New("fail")
-	m.On("Write", mock.Anything).Return(err)
-	assert.Equal(t, err, m.Write(&bytes.Buffer{}))
-}
 
 func TestMockedIOWriter(t *testing.T) {
 	m := &WriterMock{}
