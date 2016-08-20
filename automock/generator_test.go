@@ -53,8 +53,8 @@ func TestWritesProperly(t *testing.T) {
 		{"net/http", "CookieJar"},
 		{"io", "Writer"},
 		{"io", "ByteScanner"},
-		{"github.com/ernesto-jimenez/gogen/automock", "Generator"},
-		{".", "Generator"},
+		{"github.com/ernesto-jimenez/gogen/automock", "unexported"},
+		{".", "unexported"},
 	}
 	for _, test := range tests {
 		var out bytes.Buffer

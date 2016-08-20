@@ -5,7 +5,7 @@ import "strings"
 
 // Method contains the details from an interface method
 type Method struct {
-	gen *generator
+	gen *Generator
 	fn  *types.Func
 }
 

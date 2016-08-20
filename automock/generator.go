@@ -1,6 +1,7 @@
 package automock
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"go/types"
@@ -12,29 +13,19 @@ import (
 	"github.com/ernesto-jimenez/gogen/imports"
 )
 
-// Generator interface
-type Generator interface {
-	Name() string
-	SetName(string)
-	Package() string
-	SetPackage(string)
-	SetInternal(bool)
-	Methods() []Method
-	Imports() map[string]string
-	Write(io.Writer) error
-}
-
-type generator struct {
+// Generator produces code to mock an interface
+type Generator struct {
 	name      string
 	ifaceName string
 	namePkg   string
 	inPkg     bool
 	pkg       *types.Package
 	iface     *types.Interface
+	mockTmpl  *template.Template
 }
 
-// NewGenerator initializes a generator
-func NewGenerator(pkg, iface string) (Generator, error) {
+// NewGenerator initializes a Generator that will mock the given interface from the specified package.
+func NewGenerator(pkg, iface string) (*Generator, error) {
 	p, err := importer.DefaultWithTestFiles().Import(pkg)
 	if err != nil {
 		return nil, err
@@ -46,14 +37,17 @@ func NewGenerator(pkg, iface string) (Generator, error) {
 	if !types.IsInterface(obj.Type()) {
 		return nil, fmt.Errorf("%s should be an interface, was %s", iface, obj.Type())
 	}
-	return &generator{
+	g := &Generator{
 		ifaceName: iface,
 		pkg:       p,
 		iface:     obj.Type().Underlying().(*types.Interface).Complete(),
-	}, nil
+	}
+	g.SetTemplate(defaultMockTemplate)
+	return g, nil
 }
 
-func (g generator) Methods() []Method {
+// Methods returns information about all the methods required to satisfy the interface
+func (g Generator) Methods() []Method {
 	numMethods := g.iface.NumMethods()
 	methods := make([]Method, numMethods)
 	for i := 0; i < numMethods; i++ {
@@ -62,25 +56,28 @@ func (g generator) Methods() []Method {
 	return methods
 }
 
-func (g generator) qf(pkg *types.Package) string {
+func (g Generator) qf(pkg *types.Package) string {
 	if g.inPkg && g.pkg == pkg {
 		return ""
 	}
 	return pkg.Name()
 }
 
-func (g generator) Name() string {
+// Name returns the mock type's name by default it is {interfaceName}Mock
+func (g Generator) Name() string {
 	if g.name != "" {
 		return g.name
 	}
 	return g.ifaceName + "Mock"
 }
 
-func (g *generator) SetName(name string) {
+// SetName changes the mock type's name
+func (g *Generator) SetName(name string) {
 	g.name = name
 }
 
-func (g generator) Package() string {
+// Package returns the name of the package containing the mock
+func (g Generator) Package() string {
 	if g.namePkg != "" {
 		return g.namePkg
 	}
@@ -90,15 +87,17 @@ func (g generator) Package() string {
 	return "mocks"
 }
 
-func (g *generator) SetPackage(name string) {
+// SetPackage changes the package containing the mock
+func (g *Generator) SetPackage(name string) {
 	g.namePkg = name
 }
 
-func (g *generator) SetInternal(inPkg bool) {
+func (g *Generator) SetInternal(inPkg bool) {
 	g.inPkg = inPkg
 }
 
-func (g generator) Imports() map[string]string {
+// Imports returns all the packages that have to be imported for the
+func (g Generator) Imports() map[string]string {
 	imports := imports.New(g.Package())
 	for _, m := range g.Methods() {
 		s := m.signature()
@@ -108,16 +107,56 @@ func (g generator) Imports() map[string]string {
 	return imports.Imports()
 }
 
-func (g generator) Write(wr io.Writer) error {
-	var buf bytes.Buffer
-	if err := mockTmpl.Execute(&buf, g); err != nil {
+// SetTemplate allows defining a different template to generate the mock. It will be parsed with text/template and execuded with the Generator.
+func (g *Generator) SetTemplate(tmpl string) error {
+	t, err := template.New("mock").Parse(tmpl)
+	if err != nil {
 		return err
 	}
-	return cleanimports.Clean(wr, buf.Bytes())
+	g.mockTmpl = t
+	return nil
+}
+
+// Write writes the generated code in the io.Writer
+func (g Generator) Write(wr io.Writer) error {
+	var buf bytes.Buffer
+	if err := g.mockTmpl.Execute(&buf, g); err != nil {
+		return err
+	}
+	err := cleanimports.Clean(wr, buf.Bytes())
+	if err != nil {
+		err = GenerationError{
+			Err:  err,
+			Code: buf.Bytes(),
+		}
+	}
+	return err
+}
+
+// GenerationError is returned by Write when an error is encountered
+type GenerationError struct {
+	Err  error
+	Code []byte
+}
+
+func (err GenerationError) Error() string {
+	return err.Err.Error()
+}
+
+// CodeWithLineNumbers returns all the code including line numbers
+func (err GenerationError) CodeWithLineNumbers() string {
+	var buf bytes.Buffer
+	scanner := bufio.NewScanner(bytes.NewReader(err.Code))
+	var i int
+	for scanner.Scan() {
+		i++
+		fmt.Fprintf(&buf, "%d: %s\n", i, scanner.Text())
+	}
+	return buf.String()
 }
 
 var (
-	mockTmpl = template.Must(template.New("mock").Parse(`/*
+	defaultMockTemplate = `/*
 * CODE GENERATED AUTOMATICALLY WITH github.com/ernesto-jimenez/gogen/automock
 * THIS FILE SHOULD NOT BE EDITED BY HAND
 */
@@ -158,5 +197,5 @@ func (m *{{$gen.Name}}) {{.Name}}({{range $index, $type := .ParamTypes}}{{if $in
 {{end}}
 }
 {{end}}
-`))
+`
 )
