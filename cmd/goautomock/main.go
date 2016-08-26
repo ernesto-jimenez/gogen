@@ -52,7 +52,7 @@ func main() {
 	if *mockName != "" {
 		gen.SetName(*mockName)
 	}
-	inPkg := *pkg == "." && path.Dir(*out) == "."
+	inPkg := *pkg == "." && (path.Dir(*out) == "." && !strings.HasSuffix(*mockPkg, "_test"))
 	gen.SetInternal(inPkg)
 	if *mockPkg == "" && !inPkg {
 		p, err := importer.Default().Import(".")
