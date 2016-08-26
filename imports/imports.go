@@ -1,6 +1,9 @@
 package imports
 
-import "go/types"
+import (
+	"go/types"
+	"strings"
+)
 
 type Importer interface {
 	AddImportsFrom(t types.Type)
@@ -29,13 +32,26 @@ func (imp *imports) AddImportsFrom(t types.Type) {
 		if pkg.Name() == imp.currentpkg {
 			return
 		}
-		imp.imp[pkg.Path()] = pkg.Name()
+		imp.imp[vendorlessImportPath(pkg.Path())] = pkg.Name()
 	case *types.Tuple:
 		for i := 0; i < el.Len(); i++ {
 			imp.AddImportsFrom(el.At(i).Type())
 		}
 	default:
 	}
+}
+
+// vendorlessImportPath returns the devendorized version of the provided import path.
+// e.g. "foo/bar/vendor/a/b" => "a/b"
+func vendorlessImportPath(ipath string) string {
+	// Devendorize for use in import statement.
+	if i := strings.LastIndex(ipath, "/vendor/"); i >= 0 {
+		return ipath[i+len("/vendor/"):]
+	}
+	if strings.HasPrefix(ipath, "vendor/") {
+		return ipath[len("vendor/"):]
+	}
+	return ipath
 }
 
 // AddImportsFrom adds imports used in the passed type
