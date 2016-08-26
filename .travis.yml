@@ -6,4 +6,7 @@ go:
   - 1.7
   - tip
 
-script: GO15VENDOREXPERIMENT=1 go test -v -race ./...
+env:
+  - GO15VENDOREXPERIMENT=1
+
+script: go test -v -race ./...
