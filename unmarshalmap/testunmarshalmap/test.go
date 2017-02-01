@@ -4,10 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"reflect"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 // Debug indicates we should log debugging information
@@ -31,9 +34,7 @@ func Run(t *testing.T, v unmarshalMapper) {
 	// unmarshal generated map into the empty variable
 	n.UnmarshalMap(m)
 
-	if !reflect.DeepEqual(v, n) {
-		t.Fatalf("UnmarshalMap() method from %T out of date. regenerate the code", v)
-	}
+	require.Equal(t, v, n, "UnmarshalMap() method from %T out of date. regenerate the code", v)
 }
 
 func empty(t *testing.T, v unmarshalMapper) unmarshalMapper {
@@ -122,7 +123,7 @@ func fillValue(t *testing.T, scope string, v reflect.Value) {
 			fillValue(t, fmt.Sprintf("%s[%d].", scope, i), v.Index(i))
 		}
 	case reflect.Slice:
-		l := int(newInt())/2 + 1
+		l := rand.Intn(5) + 1
 		s := reflect.MakeSlice(v.Type(), l, l)
 		v.Set(s)
 		for i := 0; i < l; i++ {
