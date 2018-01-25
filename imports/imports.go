@@ -2,6 +2,8 @@ package imports
 
 import (
 	"go/types"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -32,13 +34,27 @@ func (imp *imports) AddImportsFrom(t types.Type) {
 		if pkg.Name() == imp.currentpkg {
 			return
 		}
-		imp.imp[vendorlessImportPath(pkg.Path())] = pkg.Name()
+		imp.imp[cleanImportPath(pkg.Path())] = pkg.Name()
 	case *types.Tuple:
 		for i := 0; i < el.Len(); i++ {
 			imp.AddImportsFrom(el.At(i).Type())
 		}
 	default:
 	}
+}
+
+func cleanImportPath(ipath string) string {
+	return gopathlessImportPath(
+		vendorlessImportPath(ipath),
+	)
+}
+
+func gopathlessImportPath(ipath string) string {
+	paths := strings.Split(os.Getenv("GOPATH"), ":")
+	for _, p := range paths {
+		ipath = strings.TrimPrefix(ipath, filepath.Join(p, "src")+string(filepath.Separator))
+	}
+	return ipath
 }
 
 // vendorlessImportPath returns the devendorized version of the provided import path.
