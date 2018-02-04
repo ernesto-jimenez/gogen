@@ -26,7 +26,7 @@ type Generator struct {
 
 // NewGenerator initializes a Generator that will mock the given interface from the specified package.
 func NewGenerator(pkg, iface string) (*Generator, error) {
-	p, err := importer.DefaultWithTestFiles().Import(pkg)
+	p, err := importer.Default().Import(pkg)
 	if err != nil {
 		return nil, err
 	}
